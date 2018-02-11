@@ -1,3 +1,4 @@
+
 /* Copyright (c) 2012-2016, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -1351,7 +1352,6 @@ static int lpm_probe(struct platform_device *pdev)
 
 	if (IS_ERR_OR_NULL(lpm_root_node)) {
 		pr_err("%s(): Failed to probe low power modes\n", __func__);
-		put_online_cpus();
 		return PTR_ERR(lpm_root_node);
 	}
 
@@ -1398,10 +1398,9 @@ static int lpm_probe(struct platform_device *pdev)
 			__func__, KBUILD_MODNAME);
 		ret = -ENOENT;
 		goto failed;
-	}
-	
 	register_hotcpu_notifier(&lpm_cpu_nblk);//Bug159986 ,libin.wt, MODIFY,20160418,poweroff charging, waiting for rpm ack timeout and leads to crash,Case 02403014
-	
+	}
+
 	ret = create_cluster_lvl_nodes(lpm_root_node, module_kobj);
 	if (ret) {
 		pr_err("%s(): Failed to create cluster level nodes\n",
@@ -1550,5 +1549,3 @@ void lpm_cpu_hotplug_enter(unsigned int cpu)
 
 	msm_cpu_pm_enter_sleep(mode, false);
 }
-
-
