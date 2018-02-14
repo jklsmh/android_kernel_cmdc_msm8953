@@ -51,10 +51,16 @@
 			reg = <0x0 0x86c00000 0x0 0x5600000>;     //8C200000
 		};
 
-		reloc_mem: reloc_region@0 {
+		adsp_fw_mem: adsp_fw_region@0 {
 			compatible = "removed-dma-pool";
 			no-map;
 			reg = <0x0 0x8c200000 0x0 0x1a00000>;//8DA00000
+		};
+
+		wcnss_fw_mem: wcnss_fw_region@0 {
+			compatible = "removed-dma-pool";
+			no-map;
+			reg = <0x0 0x8e700000 0x0 0x700000>;
 		};
 
 		venus_mem: venus_region@0 {
@@ -1991,7 +1997,7 @@
 		/* GPIO output to lpass */
 		qcom,gpio-force-stop = <&smp2pgpio_ssr_smp2p_2_out 0 0>;
 
-		memory-region = <&reloc_mem>;
+		memory-region = <&adsp_fw_mem>;
 	};
 
 	qcom,venus@1de0000 {
@@ -2071,7 +2077,7 @@
 
 		/* GPIO output to wcnss */
 		qcom,gpio-force-stop = <&smp2pgpio_ssr_smp2p_4_out 0 0>;
-		memory-region = <&reloc_mem>;
+		memory-region = <&wcnss_fw_mem>;
 	};
 
 	usb3: ssusb@7000000{
@@ -2093,7 +2099,6 @@
 		qcom,msm-bus,name = "usb3";
 		qcom,msm-bus,num-cases = <2>;
 		qcom,msm-bus,num-paths = <1>;
-		qcom,detect-dpdm-floating;
 		qcom,msm-bus,vectors-KBps =
 					<61 512 0 0>,
 					<61 512 240000 800000>;
@@ -2342,6 +2347,11 @@
 		clock-names = "aux_clk", "pipe_clk", "cfg_ahb_clk", "phy_reset",
 			      "phy_phy_reset", "ref_clk_src", "ref_clk";
 
+	};
+
+	usb_audio_qmi_dev {
+		compatible = "qcom,usb-audio-qmi-dev";
+		qcom,usb-audio-intr-num = <2>;
 	};
 
 	dbm_1p5: dbm@70f8000 {
