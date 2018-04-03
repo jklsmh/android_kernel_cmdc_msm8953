@@ -24,10 +24,28 @@
 #include <linux/cpumask.h>
 #include <linux/suspend.h>
 #include <linux/clk.h>
+#include <linux/clk/msm-clk-provider.h>
 #include <linux/err.h>
 #include <linux/platform_device.h>
 #include <linux/of.h>
 #include <trace/events/power.h>
+
+static unsigned long arg_cpu_max_c1 = 2016000;
+
+static int __init cpufreq_read_cpu_max_c1(char *cpu_max_c1)
+{
+	unsigned long ui_khz;
+	int ret;
+
+	ret = kstrtoul(cpu_max_c1, 0, &ui_khz);
+	if (ret)
+		return -EINVAL;
+
+	arg_cpu_max_c1 = ui_khz;
+	printk("cpu_max_c1=%lu\n", arg_cpu_max_c1);
+	return ret;
+}
+__setup("cpu_max_c1=", cpufreq_read_cpu_max_c1);
 
 static DEFINE_MUTEX(l2bw_lock);
 
@@ -248,13 +266,17 @@ static int msm_cpufreq_suspend(void)
 
 static int msm_cpufreq_resume(void)
 {
-	int cpu, ret;
+	int cpu;
+#ifndef CONFIG_CPU_BOOST
+	int ret;
 	struct cpufreq_policy policy;
+#endif
 
 	for_each_possible_cpu(cpu) {
 		per_cpu(suspend_data, cpu).device_suspended = 0;
 	}
 
+#ifndef CONFIG_CPU_BOOST
 	/*
 	 * Freq request might be rejected during suspend, resulting
 	 * in policy->cur violating min/max constraint.
@@ -276,6 +298,7 @@ static int msm_cpufreq_resume(void)
 				cpu);
 	}
 	put_online_cpus();
+#endif
 
 	return NOTIFY_DONE;
 }
@@ -368,6 +391,12 @@ static struct cpufreq_frequency_table *cpufreq_parse_dt(struct device *dev,
 		if (i > 0 && f <= ftbl[i-1].frequency)
 			break;
 
+		//Custom max freq
+		if (f > arg_cpu_max_c1) {
+			nf = i;
+			break;
+		}
+
 		ftbl[i].driver_data = i;
 		ftbl[i].frequency = f;
 	}
@@ -398,6 +427,7 @@ static int __init msm_cpufreq_probe(struct platform_device *pdev)
 		c = devm_clk_get(dev, clk_name);
 		if (IS_ERR(c))
 			return PTR_ERR(c);
+		c->flags |= CLKFLAG_NO_RATE_CACHE;
 		cpu_clk[cpu] = c;
 	}
 	hotplug_ready = true;
