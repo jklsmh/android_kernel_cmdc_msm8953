@@ -30,7 +30,8 @@
 #include <linux/of.h>
 #include <trace/events/power.h>
 
-static unsigned long arg_cpu_max_c1 = 2016000;
+// max frequency by default
+static unsigned long arg_cpu_max_c1 = 2208000;
 
 static int __init cpufreq_read_cpu_max_c1(char *cpu_max_c1)
 {
@@ -125,6 +126,11 @@ static int msm_cpufreq_target(struct cpufreq_policy *policy,
 
 	ret = set_cpu_freq(policy, table[index].frequency,
 			   table[index].driver_data);
+#ifdef CONFIG_MSM_TRACK_FREQ_TARGET_INDEX
+	if (!ret)
+		policy->cur_index = index;
+#endif
+
 done:
 	mutex_unlock(&per_cpu(suspend_data, policy->cpu).suspend_mutex);
 	return ret;
@@ -186,6 +192,9 @@ static int msm_cpufreq_init(struct cpufreq_policy *policy)
 			policy->cpu, cur_freq, table[index].frequency);
 	policy->cur = table[index].frequency;
 	policy->freq_table = table;
+#ifdef CONFIG_MSM_TRACK_FREQ_TARGET_INDEX
+	policy->cur_index = index;
+#endif
 
 	return 0;
 }
